@@ -2,6 +2,7 @@ import os
 import argparse
 import collections
 import numpy as np
+import traceback
 
 import torch
 import torch.optim as optim
@@ -12,9 +13,8 @@ from utils import model
 from utils import csv_eval
 from utils.dataloader import VocDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, Normalizer
 
-
+# support pytorch 1.0+
 assert torch.__version__.split('.')[0] == '1'
-
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 
@@ -91,9 +91,8 @@ def main():
 
                 del classification_loss
                 del regression_loss
-            except Exception as e:
-                print(e)
-                continue
+            except:
+                traceback.print_exc()
 
         print('Evaluating dataset')
         mAP = csv_eval.evaluate(dataset_val, retinanet)
