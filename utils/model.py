@@ -3,9 +3,9 @@ import torch
 import math
 import torch.utils.model_zoo as model_zoo
 from torchvision.ops import nms
-from utils.basic import BasicBlock, Bottleneck, BBoxTransform, ClipBoxes
-from utils.anchors import Anchors
-from utils import losses
+from basic import BasicBlock, Bottleneck, BBoxTransform, ClipBoxes
+from anchors import Anchors
+import losses
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -173,7 +173,7 @@ class ResNet(nn.Module):
             fpn_sizes = [self.layer2[layers[1] - 1].conv3.out_channels, self.layer3[layers[2] - 1].conv3.out_channels,
                          self.layer4[layers[3] - 1].conv3.out_channels]
         else:
-            raise ValueError(f"Block type {block} not understood")
+            raise ValueError("Block type {block} not understood")
 
         self.fpn = PyramidFeatures(fpn_sizes[0], fpn_sizes[1], fpn_sizes[2])
 

@@ -26,7 +26,6 @@ def main():
     parser.add_argument('--epochs', default=100, type=int, help='epoch number')
     parser.add_argument('--checkpoints', default='./checkpoints', help='checkpoints')
     parser.add_argument('--batch-size', default=32, type=int, help='batch size')
-
     args = parser.parse_args()
 
     dataset_train = VocDataset(args.voc_path, args.class_path, split='train',
@@ -35,7 +34,8 @@ def main():
                              transform=transforms.Compose([Normalizer(), Resizer()]))
 
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=args.batch_size, drop_last=False)
-    dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler)
+    dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler, shuffle=True)
+    #dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler)
 
     if dataset_val is not None:
         sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
@@ -43,41 +43,30 @@ def main():
 
     retinanet = model.resnet(num_classes=dataset_train.num_classes(), pretrained=True, backbone=args.backbone)
 
-    use_gpu = True
-
-    if use_gpu:
-        if torch.cuda.is_available():
-            retinanet = retinanet.cuda()
-
     if torch.cuda.is_available():
+        retinanet = retinanet.cuda()
         retinanet = torch.nn.DataParallel(retinanet).cuda()
     else:
-        retinanet = torch.nn.DataParallel(retinanet)
+        # retinanet = torch.nn.DataParallel(retinanet)
+        pass
 
-    retinanet.training = True
-
+    #retinanet.training = True
     optimizer = optim.Adam(retinanet.parameters(), lr=1e-5)
-
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
-
     loss_hist = collections.deque(maxlen=500)
-
     retinanet.train()
     retinanet.module.freeze_bn()
 
     print('Num training images: {}'.format(len(dataset_train)))
 
     for epoch_num in range(args.epochs):
-
         retinanet.train()
         retinanet.module.freeze_bn()
-
         epoch_loss = []
 
         for iter_num, data in enumerate(dataloader_train):
             try:
                 optimizer.zero_grad()
-
                 if torch.cuda.is_available():
                     classification_loss, regression_loss = retinanet([data['img'].cuda().float(), data['annot']])
                 else:
@@ -85,20 +74,15 @@ def main():
                     
                 classification_loss = classification_loss.mean()
                 regression_loss = regression_loss.mean()
-
                 loss = classification_loss + regression_loss
 
                 if bool(loss == 0):
                     continue
 
                 loss.backward()
-
                 torch.nn.utils.clip_grad_norm_(retinanet.parameters(), 0.1)
-
                 optimizer.step()
-
                 loss_hist.append(float(loss))
-
                 epoch_loss.append(float(loss))
 
                 print(
@@ -113,13 +97,12 @@ def main():
 
         print('Evaluating dataset')
         mAP = csv_eval.evaluate(dataset_val, retinanet)
-
         scheduler.step(np.mean(epoch_loss))
 
+        print('===> save one epoch')
         torch.save(retinanet.module, os.path.join(args.checkpoints, 'retinanet_{}.pth'.format(epoch_num)))
 
     retinanet.eval()
-
     torch.save(retinanet, 'model_final.pth')
 
 

@@ -19,11 +19,12 @@ import cv2
 
 class VocDataset(Dataset):
     def __init__(self, voc_path, class_path, split='train', transform=None):
-        """初始化数据加载结构，共得到如下结构：
-        name2id：key是labelname，id是labelid
-        id2name：同上反转
-        annos：所有的标注信息，key是图片路径
-        image_paths：所有的图片路径构成的list
+        """
+        init data structure, as fllows:
+        name2id: key=labelname, value=labelid
+        id2name: x
+        annos: key=the path of image, value=all image info
+        image_paths: all image path list
         """
         self.name2id, self.id2name = self._load_class(class_path)
         self.annos = {}
@@ -32,7 +33,7 @@ class VocDataset(Dataset):
         self.transform = transform
 
     def _load_class(self, class_path):
-        """加载class文件，获取name2id，id2name两个映射关系dict"""
+        """load classes.txt, get two dict of name2id,id2name"""
         name2id = {}
         id2name = {}
 
@@ -47,9 +48,7 @@ class VocDataset(Dataset):
         return name2id, id2name
 
     def _load_annos(self, voc_path, split='train'):
-        """加载anno文件，获取坐标信息，得到annos
-           包含所有的标注信息，类别标签
-        """
+        """load all anno file, get bbox, label and so on"""
         keys = [line.strip() for line in open(os.path.join(voc_path, 'ImageSets/Main', split+'.txt'))]
 
         for x in keys:
@@ -59,7 +58,7 @@ class VocDataset(Dataset):
             self.annos[jpg_path] = anno
 
     def _parse_single_xml(self, xml_path, use_difficult=False):
-        """处理单个voc anno文件，获得对应的标注坐标、类别标签"""
+        """process single voc xml, get bbox,label and so on"""
         xml_anno = ET.parse(xml_path)
         anno = []
         difficult = []
@@ -130,12 +129,11 @@ class VocDataset(Dataset):
 
         return annotations
 
-    '''
+
     def image_aspect_ratio(self, idx):
         img = cv2.imread(self.image_paths[idx])
         height, width, channel = img.shape
         return float(width) / float(height)
-    '''
 
     def num_classes(self):
         return max(self.name2id.values()) + 1
@@ -145,6 +143,10 @@ class VocDataset(Dataset):
 
 
 def collater(data):
+    """
+    1.change data type from List to Dict
+    2.change image paded
+    """
     imgs = [s['img'] for s in data]
     annots = [s['annot'] for s in data]
     scales = [s['scale'] for s in data]
@@ -186,37 +188,27 @@ class Resizer(object):
     def __call__(self, sample, min_side=608, max_side=1024):
         image, annots, prefix = sample['img'], sample['annot'], sample['prefix']
 
-        rows, cols, cns = image.shape
-
-        smallest_side = min(rows, cols)
-
-        # rescale the image so the smallest side is min_side
-        scale = min_side / smallest_side
-
-        # check if the largest side is now greater than max_side, which can happen
-        # when images have a large aspect ratio
-        largest_side = max(rows, cols)
-
-        if largest_side * scale > max_side:
-            scale = max_side / largest_side
-
+        # get scale
+        H, W, C = image.shape
+        scale1 = min_side / min(H, W)
+        scale2 = max_side / max(H, W)
+        scale = min(scale1, scale2)
         # resize the image with the computed scale
-        image = skimage.transform.resize(image, (int(round(rows*scale)), int(round((cols*scale)))))
-        rows, cols, cns = image.shape
+        image = skimage.transform.resize(image, (int(round(H*scale)), int(round((W*scale)))))
 
-        pad_w = 32 - rows%32
-        pad_h = 32 - cols%32
-
-        new_image = np.zeros((rows + pad_w, cols + pad_h, cns)).astype(np.float32)
-        new_image[:rows, :cols, :] = image.astype(np.float32)
-
+        # get new H, W, C
+        H, W, C = image.shape
+        pad_w = 32 - H % 32
+        pad_h = 32 - W % 32
+        new_image = np.zeros((H + pad_w, W + pad_h, C)).astype(np.float32)
+        new_image[:H, :W, :] = image.astype(np.float32)
         annots[:, :4] *= scale
 
         return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale, 'prefix': prefix}
 
 
 class Augmenter(object):
-    """Convert ndarrays in sample to Tensors."""
+    """convert image by X"""
     def __call__(self, sample, flip_x=0.5):
         if np.random.rand() < flip_x:
             image, annots, prefix = sample['img'], sample['annot'], sample['prefix']
@@ -289,10 +281,10 @@ class AspectRatioBasedSampler(Sampler):
             return (len(self.data_source) + self.batch_size - 1) // self.batch_size
 
     def group_images(self):
-        # determine the order of the images
         order = list(range(len(self.data_source)))
-        random.shuffle(order)
-        #order.sort(key=lambda x: self.data_source.image_aspect_ratio(x))
+        #random.shuffle(order)
+        # order the list by the width/height
+        order.sort(key=lambda x: self.data_source.image_aspect_ratio(x))
 
         # divide into groups, one group = one batch
         return [[order[x % len(order)] for x in range(i, i + self.batch_size)] for i in range(0, len(order), self.batch_size)]
