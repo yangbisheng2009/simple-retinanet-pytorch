@@ -20,7 +20,7 @@ print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 def main():
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-    parser.add_argument('--voc-path', default='/home/work/yangfg/corpus/traffic-cars-count', help='data path')
+    parser.add_argument('--voc-path', default='/home/work/yangfg/corpus/mouse', help='data path')
     parser.add_argument('--class-path', default='./configs/classes.txt', help='class path')
     parser.add_argument('--backbone', default='resnet101', help='backbone')
     parser.add_argument('--epochs', default=100, type=int, help='epoch number')
