@@ -3,9 +3,9 @@ import torch
 import math
 import torch.utils.model_zoo as model_zoo
 from torchvision.ops import nms
-from basic import BasicBlock, Bottleneck, BBoxTransform, ClipBoxes
-from anchors import Anchors
-import losses
+from utils.basic import BasicBlock, Bottleneck, BBoxTransform, ClipBoxes
+from utils.anchors import Anchors
+from utils import losses
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
