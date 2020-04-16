@@ -27,7 +27,7 @@ parser.add_argument('--batch-size', default=32, type=int, help='batch size')
 args = parser.parse_args()
 
 def main():
-    if not os._exists(args.checkpoints):
+    if not os.path.exists(args.checkpoints):
         os.mkdir(args.checkpoints)
 
     dataset_train = VocDataset(args.voc_path, args.class_path, split='train',
@@ -100,7 +100,7 @@ def main():
         mAP = csv_eval.evaluate(dataset_val, retinanet)
         scheduler.step(np.mean(epoch_loss))
 
-        print('===> save one epoch')
+        print('*** SAVE ONE EPOCH ***')
         torch.save(retinanet.module, os.path.join(args.checkpoints, 'retinanet_{}.pth'.format(epoch_num)))
 
     retinanet.eval()
