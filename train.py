@@ -17,16 +17,18 @@ from utils.dataloader import VocDataset, collater, Resizer, AspectRatioBasedSamp
 assert torch.__version__.split('.')[0] == '1'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
+parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
+parser.add_argument('--voc-path', default='/home/work/yangfg/corpus/mouse', help='data path')
+parser.add_argument('--class-path', default='./configs/classes.txt', help='class path')
+parser.add_argument('--backbone', default='resnet101', help='backbone')
+parser.add_argument('--epochs', default=100, type=int, help='epoch number')
+parser.add_argument('--checkpoints', default='./checkpoints', help='checkpoints')
+parser.add_argument('--batch-size', default=32, type=int, help='batch size')
+args = parser.parse_args()
 
 def main():
-    parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-    parser.add_argument('--voc-path', default='/home/work/yangfg/corpus/mouse', help='data path')
-    parser.add_argument('--class-path', default='./configs/classes.txt', help='class path')
-    parser.add_argument('--backbone', default='resnet101', help='backbone')
-    parser.add_argument('--epochs', default=100, type=int, help='epoch number')
-    parser.add_argument('--checkpoints', default='./checkpoints', help='checkpoints')
-    parser.add_argument('--batch-size', default=32, type=int, help='batch size')
-    args = parser.parse_args()
+    if not os._exists(args.checkpoints):
+        os.mkdir(args.checkpoints)
 
     dataset_train = VocDataset(args.voc_path, args.class_path, split='train',
                                transform=transforms.Compose([Normalizer(), Augmenter(), Resizer()]))
@@ -85,9 +87,9 @@ def main():
                 loss_hist.append(float(loss))
                 epoch_loss.append(float(loss))
 
-                print(
-                    'Epoch: {} | Iteration: {} | Classification loss: {:1.5f} | Regression loss: {:1.5f} | Running loss: {:1.5f}'.format(
-                        epoch_num, iter_num, float(classification_loss), float(regression_loss), np.mean(loss_hist)))
+                print('Epoch: {} / {} | Iteration: {} / {} | Classification loss: {:1.5f} | Regression loss: {:1.5f} | '
+                      'Running loss: {:1.5f}'.format(epoch_num, args.epochs, iter_num, len(sampler.groups),
+                      float(classification_loss), float(regression_loss), np.mean(loss_hist)))
 
                 del classification_loss
                 del regression_loss
