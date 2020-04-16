@@ -36,8 +36,8 @@ def main():
                              transform=transforms.Compose([Normalizer(), Resizer()]))
 
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=args.batch_size, drop_last=False)
-    dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler, shuffle=True)
-    #dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler)
+    #dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler, shuffle=True)
+    dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler)
 
     if dataset_val is not None:
         sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
