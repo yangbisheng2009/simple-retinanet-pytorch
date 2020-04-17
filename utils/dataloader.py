@@ -94,10 +94,14 @@ class VocDataset(Dataset):
         return self.image_paths[idx].split('/')[-1][:-4]
 
     def load_image(self, image_index):
-        img = skimage.io.imread(self.image_paths[image_index])
+        #img = skimage.io.imread(self.image_paths[image_index])
+        img = cv2.imread(self.image_paths[image_index])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
+        '''
         if len(img.shape) == 2:
             img = skimage.color.gray2rgb(img)
+        '''
 
         return img.astype(np.float32) / 255.0
 
@@ -194,7 +198,8 @@ class Resizer(object):
         scale2 = max_side / max(H, W)
         scale = min(scale1, scale2)
         # resize the image with the computed scale
-        image = skimage.transform.resize(image, (int(round(H*scale)), int(round((W*scale)))))
+        #image = skimage.transform.resize(image, (int(round(H*scale)), int(round((W*scale)))))
+        image = cv2.resize(image, (int(round(H*scale)), int(round((W*scale)))), interpolation=cv2.INTER_LINEAR)
 
         # get new H, W, C
         H, W, C = image.shape

@@ -38,7 +38,9 @@ def main():
 
     for f in os.listdir(args.input):
         file_path = os.path.join(args.input, f)
-        image = skimage.io.imread(file_path)
+        #image = skimage.io.imread(file_path)
+        image = cv2.imread(file_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         print(image.shape)
 
         sampler = {"img": image.astype(np.float32)/255.0, "annot": np.empty(shape=(5,5)), 'prefix': f[:-4]}
