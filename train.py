@@ -23,7 +23,7 @@ parser.add_argument('--class-path', default='./configs/classes.txt', help='class
 parser.add_argument('--backbone', default='resnet101', help='backbone')
 parser.add_argument('--epochs', default=100, type=int, help='epoch number')
 parser.add_argument('--checkpoints', default='./checkpoints', help='checkpoints')
-parser.add_argument('--batch-size', default=32, type=int, help='batch size')
+parser.add_argument('--batch-size', default=8, type=int, help='batch size')
 args = parser.parse_args()
 
 def main():
