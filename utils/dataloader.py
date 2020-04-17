@@ -199,7 +199,7 @@ class Resizer(object):
         scale = min(scale1, scale2)
         # resize the image with the computed scale
         #image = skimage.transform.resize(image, (int(round(H*scale)), int(round((W*scale)))))
-        image = cv2.resize(image, (int(round(H*scale)), int(round((W*scale)))), interpolation=cv2.INTER_LINEAR)
+        image = cv2.resize(image, (int(round((W*scale))), int(round(H*scale))), interpolation=cv2.INTER_LINEAR)
 
         # get new H, W, C
         H, W, C = image.shape
