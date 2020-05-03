@@ -6,3 +6,7 @@
 *.out
 *.un~
 log.*
+checkpoints
+*.pth
+*.pt
+output

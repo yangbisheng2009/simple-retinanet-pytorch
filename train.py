@@ -3,6 +3,7 @@ import argparse
 import collections
 import numpy as np
 import traceback
+import yaml
 
 import torch
 import torch.optim as optim
@@ -12,27 +13,43 @@ from torch.utils.data import DataLoader
 from utils import model
 from utils import csv_eval
 from utils.dataloader import VocDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, Normalizer
+from utils.vistool import VisTool
 
 # support pytorch 1.0+
 assert torch.__version__.split('.')[0] == '1'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
+
 parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-parser.add_argument('--voc-path', default='/home/work/yangfg/corpus/mouse', help='data path')
-parser.add_argument('--class-path', default='./configs/classes.txt', help='class path')
+parser.add_argument('-p', '--project-path', default='./configs/mouse.yml', help='project file')
 parser.add_argument('--backbone', default='resnet101', help='backbone')
 parser.add_argument('--epochs', default=100, type=int, help='epoch number')
 parser.add_argument('--checkpoints', default='./checkpoints', help='checkpoints')
 parser.add_argument('--batch-size', default=8, type=int, help='batch size')
+parser.add_argument('--plot-freq', default=1, type=int, help='plot one image every freq batchs')
+parser.add_argument('--train-vision', action='store_true', help='if plot image')
+parser.add_argument('--plot-env', default='default', help='plot image title')
 args = parser.parse_args()
 
-def main():
-    if not os.path.exists(args.checkpoints):
-        os.mkdir(args.checkpoints)
+print(args)
 
-    dataset_train = VocDataset(args.voc_path, args.class_path, split='train',
+class Params:
+    def __init__(self, project_file):
+        self.params = yaml.safe_load(open(project_file).read())
+
+    def __getattr__(self, item):
+        return self.params.get(item, None)
+
+def main():
+    params = Params(args.project_path)
+    project_name = params.project_name
+    
+    save_path = os.path.join(args.checkpoints, project_name)
+    os.makedirs(save_path, exist_ok=True)
+
+    dataset_train = VocDataset(params.voc_path, params.classes, split='train',
                                transform=transforms.Compose([Normalizer(), Augmenter(), Resizer()]))
-    dataset_val = VocDataset(args.voc_path, args.class_path, split='val',
+    dataset_val = VocDataset(params.voc_path, params.classes, split='val',
                              transform=transforms.Compose([Normalizer(), Resizer()]))
 
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=args.batch_size, drop_last=False)
@@ -41,7 +58,7 @@ def main():
 
     if dataset_val is not None:
         sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
-        dataloader_val = DataLoader(dataset_val, num_workers=3, collate_fn=collater, batch_sampler=sampler_val)
+        dataloader_val = DataLoader(dataset_val, num_workers=4, collate_fn=collater, batch_sampler=sampler_val)
 
     retinanet = model.resnet(num_classes=dataset_train.num_classes(), pretrained=True, backbone=args.backbone)
 
@@ -60,6 +77,9 @@ def main():
     retinanet.module.freeze_bn()
 
     print('Num training images: {}'.format(len(dataset_train)))
+
+    if args.train_vision:
+        vistool = VisTool(args.plot_env, params.classes)
 
     for epoch_num in range(args.epochs):
         retinanet.train()
@@ -97,11 +117,16 @@ def main():
                 traceback.print_exc()
 
         print('Evaluating dataset')
-        mAP = csv_eval.evaluate(dataset_val, retinanet)
+
+        if args.train_vision:
+            mAP = csv_eval.evaluate(dataset_val, retinanet, vistool=vistool)
+        else:
+            mAP = csv_eval.evaluate(dataset_val, retinanet)
+
         scheduler.step(np.mean(epoch_loss))
 
         print('*** SAVE ONE EPOCH ***')
-        torch.save(retinanet.module, os.path.join(args.checkpoints, 'retinanet_{}.pth'.format(epoch_num)))
+        torch.save(retinanet.module, os.path.join(save_path, 'retinanet_{}.pth'.format(epoch_num)))
 
     retinanet.eval()
     torch.save(retinanet, 'model_final.pth')

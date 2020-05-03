@@ -18,7 +18,7 @@ import skimage
 import cv2
 
 class VocDataset(Dataset):
-    def __init__(self, voc_path, class_path, split='train', transform=None):
+    def __init__(self, voc_path, classes, split='train', transform=None):
         """
         init data structure, as fllows:
         name2id: key=labelname, value=labelid
@@ -26,24 +26,20 @@ class VocDataset(Dataset):
         annos: key=the path of image, value=all image info
         image_paths: all image path list
         """
-        self.name2id, self.id2name = self._load_class(class_path)
+        self.name2id, self.id2name = self._load_class(classes)
         self.annos = {}
         self._load_annos(voc_path, split)
         self.image_paths = list(self.annos.keys())
         self.transform = transform
 
-    def _load_class(self, class_path):
+    def _load_class(self, classes):
         """load classes.txt, get two dict of name2id,id2name"""
         name2id = {}
         id2name = {}
 
-        class_id = 0
-        for line in open(class_path):
-            class_name = line.strip()
-            name2id[class_name] = class_id
-            id2name[class_id] = class_name
-
-            class_id += 1
+        for idx, cls in enumerate(classes):
+            name2id[cls] = idx
+            id2name[idx] = cls
 
         return name2id, id2name
 

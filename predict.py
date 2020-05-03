@@ -28,8 +28,11 @@ def main():
     parser.add_argument('--output', default='./output', help='output images')
     parser.add_argument('--backbone', default='resnet101', help='backbone')
     parser.add_argument('--class-path', default='./configs/classes.txt', help='class path')
-    parser.add_argument('--checkpoint', default='./checkpoints/retinanet_3.pth', help='checkpoint')
+    parser.add_argument('--checkpoint', default='./checkpoints/retinanet_4.pth', help='checkpoint')
     args = parser.parse_args()
+
+    if not os.path.exists(args.output):
+        os.mkdir(args.output)
 
     retinanet = torch.load(args.checkpoint)
     retinanet = retinanet.cuda()
@@ -63,10 +66,6 @@ def main():
             image = cv2.imread(file_path)
             for i,box in enumerate(bboxes):
                  cv2.rectangle(image,(int(box[1]),int(box[0])),(int(box[3]),int(box[2])),color=(0,0,255),thickness=2)
-            print("Predicting image: {}".format(x))
-            print(image.shape)
-            print(type(image))
-            print(bboxes)
 
             cv2.imwrite(os.path.join(args.output, f), image)
 if __name__ == "__main__":

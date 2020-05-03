@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 import json
 import os
+import cv2
 
 import torch
 
@@ -94,6 +95,10 @@ def _get_detections(dataset, retinanet, score_threshold=0.05, max_detections=100
             labels = labels.cpu().numpy()
             boxes  = boxes.cpu().numpy()
 
+            #print(scores)
+            #print(labels)
+            #print(boxes)
+
             # correct boxes for image scale
             boxes /= scale
 
@@ -155,7 +160,8 @@ def evaluate(
     iou_threshold=0.5,
     score_threshold=0.05,
     max_detections=100,
-    save_path=None
+    save_path=None,
+    vistool=None
 ):
     """ Evaluate a given dataset using a given retinanet.
     # Arguments
@@ -174,6 +180,21 @@ def evaluate(
     # gather all detections and annotations
 
     all_detections     = _get_detections(generator, retinanet, score_threshold=score_threshold, max_detections=max_detections, save_path=save_path)
+
+    # draw box on web
+    if vistool:
+        for label in range(generator.num_classes()):
+            for i in range(len(generator)):
+
+                boxes = [list(_[:4]) for _ in all_detections[i][label]]
+                #print(boxes)
+                #boxes = list(all_detections[i][label])
+                img_path = os.path.join('/home/work/yangfg/corpus/mouse/JPEGImages', generator[i]['prefix'] + '.jpg')
+                img = cv2.imread(img_path)
+                #print(img.shape)
+                vistool.draw(img, boxes, ['mouse'], str(i))
+
+
     all_annotations    = _get_annotations(generator)
 
     average_precisions = {}
