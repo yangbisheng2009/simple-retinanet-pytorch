@@ -44,7 +44,6 @@ def main():
         #image = skimage.io.imread(file_path)
         image = cv2.imread(file_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        print(image.shape)
 
         sampler = {"img": image.astype(np.float32)/255.0, "annot": np.empty(shape=(5,5)), 'prefix': f[:-4]}
         image_tf = transforms(sampler)

@@ -7,6 +7,8 @@ import cv2
 
 import torch
 
+from utils.confusion_matrix import calc_pred_gt
+
 
 
 def compute_overlap(a, b):
@@ -196,6 +198,10 @@ def evaluate(
 
 
     all_annotations    = _get_annotations(generator)
+    
+    print('--------------')
+    calc_pred_gt(all_detections, all_annotations, iou_thres=iou_threshold)
+    print('--------------')
 
     average_precisions = {}
 

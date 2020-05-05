@@ -9,4 +9,5 @@ log.*
 checkpoints
 *.pth
 *.pt
-output
+output*
+input*
