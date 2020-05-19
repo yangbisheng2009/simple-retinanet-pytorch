@@ -27,7 +27,6 @@ def main():
     parser.add_argument('--input', default='/home/work/yangfg/corpus/traffic-cars-count/test/', help='input images')
     parser.add_argument('--output', default='./output', help='output images')
     parser.add_argument('--backbone', default='resnet101', help='backbone')
-    parser.add_argument('--class-path', default='./configs/classes.txt', help='class path')
     parser.add_argument('--checkpoint', default='./checkpoints/retinanet_4.pth', help='checkpoint')
     args = parser.parse_args()
 
