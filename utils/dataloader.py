@@ -6,16 +6,12 @@ import numpy as np
 import random
 import csv
 import xml.etree.ElementTree as ET
+import cv2
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from torch.utils.data.sampler import Sampler
 
-import skimage.io
-import skimage.transform
-import skimage.color
-import skimage
-import cv2
 
 class VocDataset(Dataset):
     def __init__(self, voc_path, classes, split='train', transform=None):
