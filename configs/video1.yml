@@ -6,3 +6,4 @@ num_gpus: 1
 # for example, index of 'car' here is 2, while category_id of is 3
 
 classes: ['closed_mouth', 'open_mouth', 'closed_eye', 'open_eye']
+backbone: 'resnet101'

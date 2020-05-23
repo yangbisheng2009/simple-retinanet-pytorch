@@ -9,7 +9,6 @@ import argparse
 
 import sys
 import cv2
-import skimage
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, models, transforms
@@ -20,7 +19,7 @@ assert torch.__version__.split('.')[0] == '1'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 # threshold for class score
-threshold = 0.5
+threshold = 0.05
 
 def main():
     parser = argparse.ArgumentParser(description='retinanet predict.')
@@ -53,11 +52,14 @@ def main():
             scores,_,bboxes = retinanet(x.cuda().float())
             bboxes /= scale
             scores = scores.cpu().data.numpy()
+            print(len(scores))
+            print(scores)
             bboxes = bboxes.cpu().data.numpy()
             # select threshold
             idxs = np.where(scores > threshold)[0]
             scores = scores[idxs]
             bboxes = bboxes[idxs]
+            print(len(bboxes))
             #embed()
 
             #image =  cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_BGR2RGB)

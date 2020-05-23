@@ -110,7 +110,7 @@ def calc_pred_gt(preds, gts, iou_thres=0.5, max_detections=100):
 
     print(f'precision_molecule: {precision_molecule}, precision_denominator: {precision_denominator}')
     print(f'recall_molecule:{recall_molecule}, recall_denominator: {recall_denominator}')
-    print(f'overlap_molecule: {overlap_molecule}, recall_denominator: {recall_denominator}')
+    print(f'overlap_molecule: {overlap_molecule}, overlap_denominator: {recall_denominator}')
 
     print(f'***precision: {precision}***\n***recall: {recall}***\n***overlap: {overlap}***')
     return precision, recall

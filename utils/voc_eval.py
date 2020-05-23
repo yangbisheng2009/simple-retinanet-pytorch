@@ -191,7 +191,7 @@ def evaluate(
                 boxes = [list(_[:4]) for _ in all_detections[i][label]]
                 #print(boxes)
                 #boxes = list(all_detections[i][label])
-                img_path = os.path.join('/home/work/yangfg/corpus/mouse/JPEGImages', generator[i]['prefix'] + '.jpg')
+                img_path = os.path.join('/home/yangfg/work/corpus/fatigue/video1/JPEGImages', generator[i]['prefix'] + '.jpg')
                 img = cv2.imread(img_path)
                 #print(img.shape)
                 vistool.draw(img, boxes, ['mouse'], str(i))
@@ -203,8 +203,9 @@ def evaluate(
     calc_pred_gt(all_detections, all_annotations, iou_thres=iou_threshold)
     print('--------------')
 
-    average_precisions = {}
 
+    average_precisions = {}
+    '''
     for label in range(generator.num_classes()):
         false_positives = np.zeros((0,))
         true_positives  = np.zeros((0,))
@@ -263,6 +264,6 @@ def evaluate(
     for label in range(generator.num_classes()):
         label_name = generator.id2name[label]
         print('{}: {}'.format(label_name, average_precisions[label][0]))
-    
+    '''
     return average_precisions
 
