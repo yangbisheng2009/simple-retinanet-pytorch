@@ -6,67 +6,164 @@ import copy
 import pdb
 import time
 import argparse
-
+import yaml
 import sys
 import cv2
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, models, transforms
-from utils.dataloader import collater, Resizer, AspectRatioBasedSampler, Augmenter, UnNormalizer, Normalizer
-from torchvision import transforms as T
+
+from utils.dataloader import VocDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, \
+    UnNormalizer, Normalizer
+
+
 assert torch.__version__.split('.')[0] == '1'
 
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
-# threshold for class score
-threshold = 0.05
+parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
+parser.add_argument('--project_path', default='./configs/video1.yml', help='project path')
+parser.add_argument('--input-images', default='./input-images/video1', help='input images')
+parser.add_argument('--output-images', default='./output-images/video1', help='output images')
+parser.add_argument('--checkpoint', default='checkpoints/video1/retinanet_28.pth', help='Path to model (.pt) file.')
+parser.add_argument('--use-gpu', action='store_true', help='if use gpu')
+args = parser.parse_args()
 
-def main():
-    parser = argparse.ArgumentParser(description='retinanet predict.')
-    parser.add_argument('--input', default='/home/work/yangfg/corpus/traffic-cars-count/test/', help='input images')
-    parser.add_argument('--output', default='./output', help='output images')
-    parser.add_argument('--backbone', default='resnet101', help='backbone')
-    parser.add_argument('--checkpoint', default='./checkpoints/retinanet_4.pth', help='checkpoint')
-    args = parser.parse_args()
+class Params:
+    def __init__(self, project_file):
+        self.params = yaml.safe_load(open(project_file).read())
 
-    if not os.path.exists(args.output):
-        os.mkdir(args.output)
+    def __getattr__(self, item):
+        return self.params.get(item, None)
+
+
+def baseline():
+    params = Params(args.project_path)
+
+    dataset_val = VocDataset(params.voc_path, params.classes, split='val', transform=transforms.Compose([Normalizer(), Resizer()]))
+    sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
+    dataloader_val = DataLoader(dataset_val, num_workers=1, collate_fn=collater, batch_sampler=sampler_val)
 
     retinanet = torch.load(args.checkpoint)
-    retinanet = retinanet.cuda()
+
+    use_gpu = True
+
+    if use_gpu:
+        if torch.cuda.is_available():
+            retinanet = retinanet.cuda()
+
+    if torch.cuda.is_available():
+        retinanet = torch.nn.DataParallel(retinanet).cuda()
+    else:
+        retinanet = torch.nn.DataParallel(retinanet)
+
     retinanet.eval()
-    transforms = T.Compose([Normalizer(), Resizer()])
 
-    for f in os.listdir(args.input):
-        file_path = os.path.join(args.input, f)
-        #image = skimage.io.imread(file_path)
-        image = cv2.imread(file_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    unnormalize = UnNormalizer()
 
-        sampler = {"img": image.astype(np.float32)/255.0, "annot": np.empty(shape=(5,5)), 'prefix': f[:-4]}
-        image_tf = transforms(sampler)
-        scale = image_tf["scale"]
-        new_shape = image_tf['img'].shape
-        x = torch.autograd.Variable(image_tf['img'].unsqueeze(0).transpose(1,3), volatile=True)
+    ast = time.time()
+    for idx, data in enumerate(dataloader_val):
         with torch.no_grad():
-            scores,_,bboxes = retinanet(x.cuda().float())
-            bboxes /= scale
-            scores = scores.cpu().data.numpy()
-            print(len(scores))
-            print(scores)
-            bboxes = bboxes.cpu().data.numpy()
-            # select threshold
-            idxs = np.where(scores > threshold)[0]
-            scores = scores[idxs]
-            bboxes = bboxes[idxs]
-            print(len(bboxes))
-            #embed()
+            st = time.time()
+            #print(data)
+            if torch.cuda.is_available():
+                scores, classification, transformed_anchors = retinanet(data['img'].cuda().float())
+            else:
+                scores, classification, transformed_anchors = retinanet(data['img'].float())
+            #print('Elapsed time: {}'.format(time.time()-st))
+            idxs = np.where(scores.cpu() > 0.5)
+            img = np.array(255 * unnormalize(data['img'][0, :, :, :])).copy()
+            print(img)
 
-            #image =  cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_BGR2RGB)
-            image = cv2.imread(file_path)
-            for i,box in enumerate(bboxes):
-                 cv2.rectangle(image,(int(box[1]),int(box[0])),(int(box[3]),int(box[2])),color=(0,0,255),thickness=2)
+            img[img < 0] = 0
+            img[img > 255] = 255
 
-            cv2.imwrite(os.path.join(args.output, f), image)
-if __name__ == "__main__":
+            img = np.transpose(img, (1, 2, 0))
+            img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
+
+            for j in range(idxs[0].shape[0]):
+                text = params.classes[classification[j].item()]
+
+                bbox = transformed_anchors[idxs[0][j], :]
+                x1 = int(bbox[0])
+                y1 = int(bbox[1])
+                x2 = int(bbox[2])
+                y2 = int(bbox[3])
+
+                #cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+                cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+
+            cv2.imwrite(os.path.join(args.output_images, str(idx)+'.jpg'), img)
+    print(time.time() - ast)
+
+def main():
+    params = Params(args.project_path)
+
+    if not os.path.exists(args.output_images):
+        os.mkdir(args.output_images)
+
+    unnormalize = UnNormalizer()
+
+    # 1. preprocess data
+    tsfm = transforms.Compose([Normalizer(), Resizer()])
+
+    # 2. load checkpoint
+    retinanet = torch.load(args.checkpoint)
+    '''
+    if args.use_gpu:
+        if torch.cuda.is_available():
+            retinanet = retinanet.cuda()
+    if torch.cuda.is_available():
+        retinanet = torch.nn.DataParallel(retinanet).cuda()
+    else:
+        retinanet = torch.nn.DataParallel(retinanet)
+    '''
+    retinanet = torch.nn.DataParallel(retinanet)
+    retinanet.eval()
+
+    st = time.time()
+    for f in os.listdir(args.input_images):
+        image = cv2.imread(os.path.join(args.input_images, f))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = image.astype(np.float32) / 255.0
+
+        sample = {'img': image, 'annot': np.zeros((1, 5)), 'prefix': ''}
+        sample = tsfm(sample)
+        sample = collater([sample])
+
+        '''
+        if torch.cuda.is_available():
+            scores, classification, transformed_anchors = retinanet(sample['img'].cuda().float())
+        else:
+            scores, classification, transformed_anchors = retinanet(sample['img'].float())
+        '''
+        scores, classification, transformed_anchors = retinanet(sample['img'].float())
+
+        #print('Elapsed time: {}'.format(time.time()-st))
+        idxs = np.where(scores.cpu() > 0.5)
+        img = np.array(255 * unnormalize(sample['img'][0, :, :, :])).copy()
+
+        img[img < 0] = 0
+        img[img > 255] = 255
+
+        img = np.transpose(img, (1, 2, 0))
+        img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
+
+        for j in range(idxs[0].shape[0]):
+            text = params.classes[classification[j].item()]
+
+            bbox = transformed_anchors[idxs[0][j], :]
+            x1 = int(bbox[0])
+            y1 = int(bbox[1])
+            x2 = int(bbox[2])
+            y2 = int(bbox[3])
+
+            cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+            cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+
+        cv2.imwrite(os.path.join(args.output_images, f), img)
+    print(time.time() - st)
+if __name__ == '__main__':
+    #baseline()
     main()
