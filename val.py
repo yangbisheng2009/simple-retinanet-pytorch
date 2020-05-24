@@ -13,8 +13,8 @@ assert torch.__version__.split('.')[0] == '1'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-parser.add_argument('-p', '--project-path', help='project path')
-parser.add_argument('--checkpoint', help='Path to model', type=str)
+parser.add_argument('-p', '--project-path', default='./configs/video1.yml', help='project path')
+parser.add_argument('--checkpoint', default='./checkpoints/video1/retinanet_28.pth', help='Path to model (.pt) file.')
 args = parser.parse_args()
 
 class Params:
@@ -28,32 +28,19 @@ class Params:
 def main():
     params = Params(args.project_path)
 
+    # 1. prepare data
     dataset_val = VocDataset(params.voc_path, params.classes, split='val',
                              transform=transforms.Compose([Normalizer(), Resizer()]))
 
-
-    # Create the model
-    retinanet = model.resnet(num_classes=dataset_val.num_classes(), pretrained=True, backbone=params.backbone)
-
-    use_gpu = True
-
-    if use_gpu:
-        if torch.cuda.is_available():
-            retinanet = retinanet.cuda()
-
+    # 2. prepare model
+    retinanet = torch.load(args.checkpoint)
     if torch.cuda.is_available():
-        #retinanet.load_state_dict(torch.load(args.checkpoint))
-        retinanet = torch.load(args.checkpoint)
+        retinanet = retinanet.cuda()
         retinanet = torch.nn.DataParallel(retinanet).cuda()
     else:
-        retinanet.load_state_dict(torch.load(args.checkpoint))
         retinanet = torch.nn.DataParallel(retinanet)
-
-    retinanet.training = False
     retinanet.eval()
-    retinanet.module.freeze_bn()
 
-    #coco_eval.evaluate_coco(dataset_val, retinanet)
     mAP = voc_eval.evaluate(dataset_val, retinanet)
 
 

@@ -47,13 +47,8 @@ def baseline():
 
     retinanet = torch.load(args.checkpoint)
 
-    use_gpu = True
-
-    if use_gpu:
-        if torch.cuda.is_available():
-            retinanet = retinanet.cuda()
-
     if torch.cuda.is_available():
+        retinanet = retinanet.cuda()
         retinanet = torch.nn.DataParallel(retinanet).cuda()
     else:
         retinanet = torch.nn.DataParallel(retinanet)
@@ -67,14 +62,19 @@ def baseline():
         with torch.no_grad():
             st = time.time()
             #print(data)
+            print(data['img'].shape)
             if torch.cuda.is_available():
                 scores, classification, transformed_anchors = retinanet(data['img'].cuda().float())
             else:
                 scores, classification, transformed_anchors = retinanet(data['img'].float())
             #print('Elapsed time: {}'.format(time.time()-st))
+            print(scores)
+            print(classification)
+            print(transformed_anchors)
+            #print(scores)
             idxs = np.where(scores.cpu() > 0.5)
             img = np.array(255 * unnormalize(data['img'][0, :, :, :])).copy()
-            print(img)
+            #print(img)
 
             img[img < 0] = 0
             img[img > 255] = 255
@@ -82,6 +82,7 @@ def baseline():
             img = np.transpose(img, (1, 2, 0))
             img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
 
+            '''
             for j in range(idxs[0].shape[0]):
                 text = params.classes[classification[j].item()]
 
@@ -93,8 +94,8 @@ def baseline():
 
                 #cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
                 cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
-
-            cv2.imwrite(os.path.join(args.output_images, str(idx)+'.jpg'), img)
+            '''
+            #cv2.imwrite(os.path.join(args.output_images, str(idx)+'.jpg'), img)
     print(time.time() - ast)
 
 def main():
@@ -110,7 +111,6 @@ def main():
 
     # 2. load checkpoint
     retinanet = torch.load(args.checkpoint)
-    '''
     if args.use_gpu:
         if torch.cuda.is_available():
             retinanet = retinanet.cuda()
@@ -118,8 +118,7 @@ def main():
         retinanet = torch.nn.DataParallel(retinanet).cuda()
     else:
         retinanet = torch.nn.DataParallel(retinanet)
-    '''
-    retinanet = torch.nn.DataParallel(retinanet)
+
     retinanet.eval()
 
     st = time.time()
@@ -132,13 +131,10 @@ def main():
         sample = tsfm(sample)
         sample = collater([sample])
 
-        '''
         if torch.cuda.is_available():
             scores, classification, transformed_anchors = retinanet(sample['img'].cuda().float())
         else:
             scores, classification, transformed_anchors = retinanet(sample['img'].float())
-        '''
-        scores, classification, transformed_anchors = retinanet(sample['img'].float())
 
         #print('Elapsed time: {}'.format(time.time()-st))
         idxs = np.where(scores.cpu() > 0.5)
@@ -165,5 +161,5 @@ def main():
         cv2.imwrite(os.path.join(args.output_images, f), img)
     print(time.time() - st)
 if __name__ == '__main__':
-    #baseline()
-    main()
+    baseline()
+    #main()
