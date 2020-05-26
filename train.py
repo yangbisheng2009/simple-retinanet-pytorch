@@ -42,45 +42,45 @@ class Params:
         return self.params.get(item, None)
 
 def main():
+    # Prepare base env
     params = Params(args.project_path)
     project_name = params.project_name
-    
     save_path = os.path.join(args.checkpoints, project_name)
     os.makedirs(save_path, exist_ok=True)
 
+    # Whether need visdom or not
+    if args.train_vision:
+        vistool = VisTool(args.plot_env, params.classes)
+
+    # Dataloader
     dataset_train = VocDataset(params.voc_path, params.classes, split='train',
                                transform=transforms.Compose([Normalizer(), Augmenter(), Resizer()]))
     dataset_val = VocDataset(params.voc_path, params.classes, split='val',
                              transform=transforms.Compose([Normalizer(), Resizer()]))
-
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=args.batch_size, drop_last=False)
     dataloader_train = DataLoader(dataset_train, num_workers=8, collate_fn=collater, batch_sampler=sampler)
+    sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
+    dataloader_val = DataLoader(dataset_val, num_workers=4, collate_fn=collater, batch_sampler=sampler_val)
 
-    if dataset_val is not None:
-        sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
-        dataloader_val = DataLoader(dataset_val, num_workers=4, collate_fn=collater, batch_sampler=sampler_val)
-
+    # Backbone
     retinanet = model.resnet(num_classes=dataset_train.num_classes(), pretrained=True, backbone=args.backbone)
-
     if torch.cuda.is_available():
         retinanet = retinanet.cuda()
         retinanet = torch.nn.DataParallel(retinanet).cuda()
     else:
-        # retinanet = torch.nn.DataParallel(retinanet)
-        pass
+        retinanet = torch.nn.DataParallel(retinanet)
 
-    #retinanet.training = True
+    # Backbone network parameters
     optimizer = optim.Adam(retinanet.parameters(), lr=1e-5)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
     loss_hist = collections.deque(maxlen=500)
     retinanet.train()
     retinanet.module.freeze_bn()
 
+    # Print workspace
     print('Num training images: {}'.format(len(dataset_train)))
 
-    if args.train_vision:
-        vistool = VisTool(args.plot_env, params.classes)
-
+    # Train epochs
     for epoch_num in range(args.epochs):
         retinanet.train()
         retinanet.module.freeze_bn()
@@ -93,7 +93,7 @@ def main():
                     classification_loss, regression_loss = retinanet([data['img'].cuda().float(), data['annot']])
                 else:
                     classification_loss, regression_loss = retinanet([data['img'].float(), data['annot']])
-                    
+
                 classification_loss = classification_loss.mean()
                 regression_loss = regression_loss.mean()
                 loss = classification_loss + regression_loss
