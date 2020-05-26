@@ -15,8 +15,3 @@ python predict.py --input intput-images --output output-images --checkpoint chec
 ## References
 https://github.com/chenyuntc/simple-faster-rcnn-pytorch  
 https://github.com/yhenon/pytorch-retinanet  
-
-## 什么是简单
-
-## MAP改进
-改变传统MAP计算方式
