@@ -1,5 +1,5 @@
 project_name: 'mouse'  # also the folder name of the dataset that under data_path folder
-voc_path: '/home/yangfg/work/corpus/mouse'
+voc_path: '/home/work/yangfg/corpus/mouse'
 num_gpus: 1
 
 # category_id is one_indexed,
