@@ -23,7 +23,7 @@ assert torch.__version__.split('.')[0] == '1'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-parser.add_argument('--project_path', default='./configs/video1.yml', help='project path')
+parser.add_argument('-p', '--project_path', default='./configs/video1.yml', help='project path')
 parser.add_argument('--input-images', default='./input-images/video1', help='input images')
 parser.add_argument('--output-images', default='./output-images/video1', help='output images')
 parser.add_argument('--checkpoint', default='checkpoints/video1/retinanet_28.pth', help='Path to model (.pt) file.')
@@ -62,7 +62,7 @@ def baseline():
         with torch.no_grad():
             st = time.time()
             #print(data)
-            print(data['img'].shape)
+            #print(data['img'].shape)
             if torch.cuda.is_available():
                 scores, classification, transformed_anchors = retinanet(data['img'].cuda().float())
             else:
@@ -82,7 +82,6 @@ def baseline():
             img = np.transpose(img, (1, 2, 0))
             img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
 
-            '''
             for j in range(idxs[0].shape[0]):
                 text = params.classes[classification[j].item()]
 
@@ -92,10 +91,9 @@ def baseline():
                 x2 = int(bbox[2])
                 y2 = int(bbox[3])
 
-                #cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+                cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
                 cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
-            '''
-            #cv2.imwrite(os.path.join(args.output_images, str(idx)+'.jpg'), img)
+            cv2.imwrite(os.path.join(args.output_images, str(idx)+'.jpg'), img)
     print(time.time() - ast)
 
 def main():
@@ -161,5 +159,5 @@ def main():
         cv2.imwrite(os.path.join(args.output_images, f), img)
     print(time.time() - st)
 if __name__ == '__main__':
-    baseline()
-    #main()
+    #baseline()
+    main()
