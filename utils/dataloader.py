@@ -203,6 +203,26 @@ class Resizer(object):
 
         return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale, 'prefix': prefix}
 
+def UnResizer(object):
+    def __call__(self, bbox, img1, img2):
+        """
+        :param self:
+        :param bbox:
+        :param img1: source image
+        :param img2: resized image
+        :return:
+        """
+        xmin, ymin, xmax, ymax = bbox
+        h1, w1, _ = img1.shape
+        h2, w2, _ = img2.shape
+
+        h_scale = h1 / h2
+        w_scale = w1 / w2
+
+        xmin, xmax = xmin * w_scale, xmax * w_scale
+        ymin, yamx = ymin * h_scale, ymax * h_scale
+
+        return (xmin, ymin, xmax, ymax)
 
 class Augmenter(object):
     """convert image by X"""

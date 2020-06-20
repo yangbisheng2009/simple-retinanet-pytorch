@@ -15,7 +15,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, models, transforms
 
 from utils.dataloader import VocDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, \
-    UnNormalizer, Normalizer
+    UnNormalizer, Normalizer, UnResizer
 from utils import model
 
 
@@ -46,6 +46,7 @@ def main():
         os.mkdir(args.output_images)
 
     unnormalize = UnNormalizer()
+    unresizer = UnResizer()
 
     # 1. preprocess data
     tsfm = transforms.Compose([Normalizer(), Resizer()])
@@ -67,10 +68,10 @@ def main():
     st = time.time()
     for f in os.listdir(args.input_images):
         image = cv2.imread(os.path.join(args.input_images, f))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = image.astype(np.float32) / 255.0
+        image_ = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_ = image_.astype(np.float32) / 255.0
 
-        sample = {'img': image, 'annot': np.zeros((1, 5)), 'prefix': ''}
+        sample = {'img': image_, 'annot': np.zeros((1, 5)), 'prefix': ''}
         sample = tsfm(sample)
         sample = collater([sample])
 
@@ -98,10 +99,13 @@ def main():
             x2 = int(bbox[2])
             y2 = int(bbox[3])
 
-            cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
-            cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+            xmin, ymin, xmax, ymax = unresizer((x1, y1, x2, y2), image, img)
 
-        cv2.imwrite(os.path.join(args.output_images, f), img)
+            #cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+            #cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+            cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=(0, 0, 255), thickness=2)
+            cv2.putText(image, text, (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+        cv2.imwrite(os.path.join(args.output_images, f), image)
     print(time.time() - st)
 
 if __name__ == '__main__':
