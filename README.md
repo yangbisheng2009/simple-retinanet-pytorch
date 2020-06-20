@@ -15,3 +15,10 @@ python predict.py --input intput-images --output output-images --checkpoint chec
 ## References
 https://github.com/chenyuntc/simple-faster-rcnn-pytorch  
 https://github.com/yhenon/pytorch-retinanet  
+
+## ChangeLog
+2020-03-06: First commit.  
+2020-03-10: Modify dataloader(COCO to VOC).  
+2020-04-20: Add yaml config.  
+2020-05-26: Modify the method of save model so that I can load the model everywhere. torch.save(model) -> torch.save(model.state_dict())  
+2020-06-20: Modify predict resize method to keep the same size between input images and output images.  
