@@ -16,6 +16,7 @@ from torchvision import datasets, models, transforms
 
 from utils.dataloader import VocDataset, collater, Resizer, AspectRatioBasedSampler, Augmenter, \
     UnNormalizer, Normalizer
+from utils import model
 
 
 assert torch.__version__.split('.')[0] == '1'
@@ -27,6 +28,7 @@ parser.add_argument('-p', '--project_path', default='./configs/video1.yml', help
 parser.add_argument('--input-images', default='./input-images/video1', help='input images')
 parser.add_argument('--output-images', default='./output-images/video1', help='output images')
 parser.add_argument('--checkpoint', default='checkpoints/video1/retinanet_28.pth', help='Path to model (.pt) file.')
+parser.add_argument('--backbone', default='resnet101', help='backbone.')
 parser.add_argument('--use-gpu', action='store_true', help='if use gpu')
 args = parser.parse_args()
 
@@ -36,65 +38,6 @@ class Params:
 
     def __getattr__(self, item):
         return self.params.get(item, None)
-
-
-def baseline():
-    params = Params(args.project_path)
-
-    dataset_val = VocDataset(params.voc_path, params.classes, split='val', transform=transforms.Compose([Normalizer(), Resizer()]))
-    sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
-    dataloader_val = DataLoader(dataset_val, num_workers=1, collate_fn=collater, batch_sampler=sampler_val)
-
-    retinanet = torch.load(args.checkpoint)
-
-    if torch.cuda.is_available():
-        retinanet = retinanet.cuda()
-        retinanet = torch.nn.DataParallel(retinanet).cuda()
-    else:
-        retinanet = torch.nn.DataParallel(retinanet)
-
-    retinanet.eval()
-
-    unnormalize = UnNormalizer()
-
-    ast = time.time()
-    for idx, data in enumerate(dataloader_val):
-        with torch.no_grad():
-            st = time.time()
-            #print(data)
-            #print(data['img'].shape)
-            if torch.cuda.is_available():
-                scores, classification, transformed_anchors = retinanet(data['img'].cuda().float())
-            else:
-                scores, classification, transformed_anchors = retinanet(data['img'].float())
-            #print('Elapsed time: {}'.format(time.time()-st))
-            print(scores)
-            print(classification)
-            print(transformed_anchors)
-            #print(scores)
-            idxs = np.where(scores.cpu() > 0.5)
-            img = np.array(255 * unnormalize(data['img'][0, :, :, :])).copy()
-            #print(img)
-
-            img[img < 0] = 0
-            img[img > 255] = 255
-
-            img = np.transpose(img, (1, 2, 0))
-            img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
-
-            for j in range(idxs[0].shape[0]):
-                text = params.classes[classification[j].item()]
-
-                bbox = transformed_anchors[idxs[0][j], :]
-                x1 = int(bbox[0])
-                y1 = int(bbox[1])
-                x2 = int(bbox[2])
-                y2 = int(bbox[3])
-
-                cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
-                cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
-            cv2.imwrite(os.path.join(args.output_images, str(idx)+'.jpg'), img)
-    print(time.time() - ast)
 
 def main():
     params = Params(args.project_path)
@@ -108,7 +51,9 @@ def main():
     tsfm = transforms.Compose([Normalizer(), Resizer()])
 
     # 2. load checkpoint
-    retinanet = torch.load(args.checkpoint)
+    retinanet = model.resnet(len(params.classes), pretrained=False, backbone=args.backbone)
+    retinanet.load_state_dict(torch.load(args.checkpoint))
+    #retinanet = torch.load(args.checkpoint)
     if args.use_gpu:
         if torch.cuda.is_available():
             retinanet = retinanet.cuda()
@@ -158,6 +103,6 @@ def main():
 
         cv2.imwrite(os.path.join(args.output_images, f), img)
     print(time.time() - st)
+
 if __name__ == '__main__':
-    #baseline()
     main()

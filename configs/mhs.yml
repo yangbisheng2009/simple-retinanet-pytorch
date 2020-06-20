@@ -1,0 +1,8 @@
+project_name: 'mhs'  # also the folder name of the dataset that under data_path folder
+voc_path: '/home/work/yangfg/corpus/mouse-hat-smoke'
+num_gpus: 1
+
+# category_id is one_indexed,
+# for example, index of 'car' here is 2, while category_id of is 3
+
+classes: ['hat', 'person', 'mouse', 'smoke']

@@ -127,10 +127,10 @@ def main():
         scheduler.step(np.mean(epoch_loss))
 
         print('*** SAVE ONE EPOCH ***')
-        torch.save(retinanet.module, os.path.join(save_path, 'retinanet_{}.pth'.format(epoch_num)))
+        torch.save(retinanet.module.state_dict(), os.path.join(save_path, 'retinanet_{}.pth'.format(epoch_num)))
 
     retinanet.eval()
-    torch.save(retinanet, 'model_final.pth')
+    torch.save(retinanet.state_dict(), 'model_final.pth')
 
 
 if __name__ == '__main__':
