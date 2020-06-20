@@ -90,22 +90,19 @@ def main():
         img = np.transpose(img, (1, 2, 0))
         img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
 
+        scale = unresizer.get_scale(image)
         for j in range(idxs[0].shape[0]):
             text = params.classes[classification[j].item()]
-
             bbox = transformed_anchors[idxs[0][j], :]
-            x1 = int(bbox[0])
-            y1 = int(bbox[1])
-            x2 = int(bbox[2])
-            y2 = int(bbox[3])
+            #xmin, ymin, xmax, ymax = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+            xmin, ymin, xmax, ymax = unresizer([bbox[0], bbox[1], bbox[2], bbox[3]], scale)
 
-            xmin, ymin, xmax, ymax = unresizer((x1, y1, x2, y2), image, img)
-
-            #cv2.rectangle(img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
-            #cv2.putText(img, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+            #cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color=(0, 0, 255), thickness=2)
+            #cv2.putText(img, text, (int(bbox[0]), int(bbox[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
             cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=(0, 0, 255), thickness=2)
             cv2.putText(image, text, (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
         cv2.imwrite(os.path.join(args.output_images, f), image)
+        #cv2.imwrite(os.path.join(args.output_images, f), img)
     print(time.time() - st)
 
 if __name__ == '__main__':

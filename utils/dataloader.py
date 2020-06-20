@@ -195,34 +195,29 @@ class Resizer(object):
 
         # get new H, W, C
         H, W, C = image.shape
-        pad_w = 32 - H % 32
-        pad_h = 32 - W % 32
-        new_image = np.zeros((H + pad_w, W + pad_h, C)).astype(np.float32)
+        pad_w = 0
+        pad_h = 0
+        if H % 32 != 0:
+            pad_h = 32 - H % 32
+        if W % 32 != 0:
+            pad_w = 32 - W % 32
+        new_image = np.zeros((H + pad_h, W + pad_w, C)).astype(np.float32)
         new_image[:H, :W, :] = image.astype(np.float32)
         annots[:, :4] *= scale
 
         return {'img': torch.from_numpy(new_image), 'annot': torch.from_numpy(annots), 'scale': scale, 'prefix': prefix}
 
-def UnResizer(object):
-    def __call__(self, bbox, img1, img2):
-        """
-        :param self:
-        :param bbox:
-        :param img1: source image
-        :param img2: resized image
-        :return:
-        """
-        xmin, ymin, xmax, ymax = bbox
-        h1, w1, _ = img1.shape
-        h2, w2, _ = img2.shape
+class UnResizer(object):
+    def get_scale(self, img, min_side=608, max_side=1024):
+        H, W, _ = img.shape
 
-        h_scale = h1 / h2
-        w_scale = w1 / w2
+        scale1 = min_side / min(H, W)
+        scale2 = max_side / max(H, W)
 
-        xmin, xmax = xmin * w_scale, xmax * w_scale
-        ymin, yamx = ymin * h_scale, ymax * h_scale
+        return min(scale1, scale2)
 
-        return (xmin, ymin, xmax, ymax)
+    def __call__(self, bbox, scale):
+        return [x / scale for x in bbox]
 
 class Augmenter(object):
     """convert image by X"""
