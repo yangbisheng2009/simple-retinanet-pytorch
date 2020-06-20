@@ -217,7 +217,7 @@ class UnResizer(object):
         return min(scale1, scale2)
 
     def __call__(self, bbox, scale):
-        return [x / scale for x in bbox]
+        return [int(x / scale) for x in bbox]
 
 class Augmenter(object):
     """convert image by X"""
