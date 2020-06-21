@@ -1,9 +1,9 @@
-project_name: 'video1'  # also the folder name of the dataset that under data_path folder
-voc_path: '/home/yangfg/work/corpus/fatigue/video1'
+project_name: 'mask'  # also the folder name of the dataset that under data_path folder
+voc_path: '/home/work/yangfg/corpus/mask/'
 num_gpus: 1
 
 # category_id is one_indexed,
 # for example, index of 'car' here is 2, while category_id of is 3
 
-classes: ['closed_mouth', 'open_mouth', 'closed_eye', 'open_eye']
+classes: ['face', 'face_mask']
 backbone: 'resnet101'

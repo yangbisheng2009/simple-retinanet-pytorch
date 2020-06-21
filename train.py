@@ -26,7 +26,7 @@ parser.add_argument('-p', '--project-path', default='./configs/mouse.yml', help=
 parser.add_argument('--backbone', default='resnet101', help='backbone')
 parser.add_argument('--epochs', default=100, type=int, help='epoch number')
 parser.add_argument('--checkpoints', default='./checkpoints', help='checkpoints')
-parser.add_argument('--batch-size', default=8, type=int, help='batch size')
+parser.add_argument('--batch-size', default=4, type=int, help='batch size')
 parser.add_argument('--plot-freq', default=1, type=int, help='plot one image every freq batchs')
 parser.add_argument('--train-vision', action='store_true', help='if plot image')
 parser.add_argument('--plot-env', default='default', help='plot image title')
