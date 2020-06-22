@@ -9,6 +9,7 @@ import argparse
 import yaml
 import sys
 import cv2
+import random
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -40,9 +41,18 @@ class Params:
     def __getattr__(self, item):
         return self.params.get(item, None)
 
+def get_all_colors(classes_num, seed=1):
+    class_colors = []
+    random.seed(seed)
+    for _ in range(classes_num):
+        class_colors.append(tuple([random.randint(0, 255) for _ in range(3)]))
+
+    return class_colors
+
 def main():
     params = Params(args.project_path)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    class_colors = get_all_colors(len(params.classes))
 
     if not os.path.exists(args.output_images):
         os.mkdir(args.output_images)
@@ -95,12 +105,13 @@ def main():
             scale = unresizer.get_scale(image)
             for j in range(idxs[0].shape[0]):
                 text = params.classes[classification[j].item()]
+                color = class_colors[classification[j].item()]
                 bbox = transformed_anchors[idxs[0][j], :]
                 #xmin, ymin, xmax, ymax = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
                 xmin, ymin, xmax, ymax = unresizer([bbox[0], bbox[1], bbox[2], bbox[3]], scale)
 
-                cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=(0, 0, 255), thickness=2)
-                cv2.putText(image, text, (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+                cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=color, thickness=2)
+                cv2.putText(image, text, (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 1)
             cv2.imwrite(os.path.join(args.output_images, f), image)
 
     print(time.time() - st)
