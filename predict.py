@@ -67,6 +67,7 @@ def main():
 
     st = time.time()
     for f in os.listdir(args.input_images):
+        per_st = time.time()
         image = cv2.imread(os.path.join(args.input_images, f))
         image_ = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_ = image_.astype(np.float32) / 255.0
@@ -103,6 +104,7 @@ def main():
             cv2.putText(image, text, (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
         cv2.imwrite(os.path.join(args.output_images, f), image)
         #cv2.imwrite(os.path.join(args.output_images, f), img)
+        print('{} cost {}'.format(f, time.time() - per_st))
     print(time.time() - st)
 
 if __name__ == '__main__':
