@@ -17,16 +17,16 @@ python predict.py --input intput-images --output output-images --checkpoint chec
 ## Examples
 ### Mouse Detection
 <p align="left">
-    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/image/1.jpg">
-    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/image/2.jpg">
+    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/1.jpg">
+    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/2.jpg">
 </p>
 <p align="left">
-    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/image/3.jpg">
-    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/image/4.jpg">
+    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/3.jpg">
+    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/4.jpg">
 </p>
 <p align="left">
-    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/image/5.jpg">
-    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/image/6.jpg">
+    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/5.jpg">
+    <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/6.jpg">
 </p>
 ### Helmat Detection
 
