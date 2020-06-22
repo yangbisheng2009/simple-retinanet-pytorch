@@ -21,6 +21,7 @@ from utils import model
 
 assert torch.__version__.split('.')[0] == '1'
 
+os.environ["LRU_CACHE_CAPACITY"] = "1"
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
 parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
@@ -41,6 +42,7 @@ class Params:
 
 def main():
     params = Params(args.project_path)
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     if not os.path.exists(args.output_images):
         os.mkdir(args.output_images)
@@ -64,44 +66,43 @@ def main():
 
     st = time.time()
     for f in os.listdir(args.input_images):
-        per_st = time.time()
-        image = cv2.imread(os.path.join(args.input_images, f))
-        image_ = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image_ = image_.astype(np.float32) / 255.0
+        with torch.no_grad():
+            per_st = time.time()
+            image = cv2.imread(os.path.join(args.input_images, f))
+            image_ = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image_ = image_.astype(np.float32) / 255.0
 
-        sample = {'img': image_, 'annot': np.zeros((1, 5)), 'prefix': ''}
-        sample = tsfm(sample)
-        sample = collater([sample])
+            sample = {'img': image_, 'annot': np.zeros((1, 5)), 'prefix': ''}
+            sample = tsfm(sample)
+            sample = collater([sample])
 
-        if torch.cuda.is_available():
-            scores, classification, transformed_anchors = retinanet(sample['img'].cuda().float())
-        else:
-            scores, classification, transformed_anchors = retinanet(sample['img'].float())
+            if torch.cuda.is_available():
+                scores, classification, transformed_anchors = retinanet(sample['img'].cuda().float())
+            else:
+                #scores, classification, transformed_anchors = retinanet(sample['img'].float())
+                scores, classification, transformed_anchors = retinanet(sample['img'].to(device))
+            print('{} cost {}'.format(f, time.time() - per_st))
+            
+            idxs = np.where(scores.cpu() > 0.5)
+            img = np.array(255 * unnormalize(sample['img'][0, :, :, :])).copy()
 
-        #print('Elapsed time: {}'.format(time.time()-st))
-        idxs = np.where(scores.cpu() > 0.5)
-        img = np.array(255 * unnormalize(sample['img'][0, :, :, :])).copy()
+            img[img < 0] = 0
+            img[img > 255] = 255
 
-        img[img < 0] = 0
-        img[img > 255] = 255
+            img = np.transpose(img, (1, 2, 0))
+            img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
 
-        img = np.transpose(img, (1, 2, 0))
-        img = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2RGB)
+            scale = unresizer.get_scale(image)
+            for j in range(idxs[0].shape[0]):
+                text = params.classes[classification[j].item()]
+                bbox = transformed_anchors[idxs[0][j], :]
+                #xmin, ymin, xmax, ymax = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+                xmin, ymin, xmax, ymax = unresizer([bbox[0], bbox[1], bbox[2], bbox[3]], scale)
 
-        scale = unresizer.get_scale(image)
-        for j in range(idxs[0].shape[0]):
-            text = params.classes[classification[j].item()]
-            bbox = transformed_anchors[idxs[0][j], :]
-            #xmin, ymin, xmax, ymax = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
-            xmin, ymin, xmax, ymax = unresizer([bbox[0], bbox[1], bbox[2], bbox[3]], scale)
+                cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=(0, 0, 255), thickness=2)
+                cv2.putText(image, text, (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+            cv2.imwrite(os.path.join(args.output_images, f), image)
 
-            #cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color=(0, 0, 255), thickness=2)
-            #cv2.putText(img, text, (int(bbox[0]), int(bbox[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
-            cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=(0, 0, 255), thickness=2)
-            cv2.putText(image, text, (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
-        cv2.imwrite(os.path.join(args.output_images, f), image)
-        #cv2.imwrite(os.path.join(args.output_images, f), img)
-        print('{} cost {}'.format(f, time.time() - per_st))
     print(time.time() - st)
 
 if __name__ == '__main__':
