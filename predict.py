@@ -89,8 +89,7 @@ def main():
             if torch.cuda.is_available():
                 scores, classification, transformed_anchors = retinanet(sample['img'].cuda().float())
             else:
-                #scores, classification, transformed_anchors = retinanet(sample['img'].float())
-                scores, classification, transformed_anchors = retinanet(sample['img'].to(device))
+                scores, classification, transformed_anchors = retinanet(sample['img'].float())
             print('{} cost {}'.format(f, time.time() - per_st))
             
             idxs = np.where(scores.cpu() > 0.5)
