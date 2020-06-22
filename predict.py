@@ -53,14 +53,11 @@ def main():
 
     # 2. load checkpoint
     retinanet = model.resnet(len(params.classes), pretrained=False, backbone=args.backbone)
-    retinanet.load_state_dict(torch.load(args.checkpoint))
-    #retinanet = torch.load(args.checkpoint)
-    if args.use_gpu:
-        if torch.cuda.is_available():
-            retinanet = retinanet.cuda()
     if torch.cuda.is_available():
+        retinanet.load_state_dict(torch.load(args.checkpoint))
         retinanet = torch.nn.DataParallel(retinanet).cuda()
     else:
+        retinanet.load_state_dict(torch.load(args.checkpoint, map_location='cpu'))
         retinanet = torch.nn.DataParallel(retinanet)
 
     retinanet.eval()
