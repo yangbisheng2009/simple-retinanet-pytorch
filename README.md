@@ -15,7 +15,7 @@ nohup python train.py --project-path confgs/xxx.yml --batch-size 16 --backbone r
 python predict.py --input intput-images --output output-images --checkpoint checkpoints/xxx/retinanet_99.pth --project-file confgs/xxx.yml
 ```
 ## Examples
-### Mouse Detection
+### Mouse Detection(single class)
 <p align="left">
     <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/1.jpg">
     <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/2.jpg">
@@ -28,7 +28,6 @@ python predict.py --input intput-images --output output-images --checkpoint chec
     <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/5.jpg">
     <img width=350 height=250 src="https://github.com/yangbisheng2009/simple-retinanet-pytorch/blob/master/images/6.jpg">
 </p>
-### Helmat Detection
 
 ## Tricks
 1. Prefer to use single GPU.
