@@ -12,7 +12,7 @@ So, I create this project which can suit almost all scenes. If you are new to ob
 # train
 CUDA_VISIBLE_DEVICES=0 python train.py --project-path confgs/xxx.yml --batch-size 4 --backbone resnet101 --checkpoints checkpoints/ --epochs 100
 # predict
-python predict.py --input intput-images --output output-images --checkpoint checkpoints/xxx/retinanet_99.pth --project-file confgs/xxx.yml
+python predict.py --input-images ./intput-images --output-images ./output-images --checkpoint checkpoints/xxx/retinanet_99.pth --project-file configs/xxx.yml
 ```
 ## Examples
 ### Mouse Detection(single class)
