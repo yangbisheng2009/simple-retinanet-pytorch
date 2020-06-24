@@ -10,7 +10,7 @@ So, I create this project which can suit almost all scenes. If you are new to ob
 ## Useage
 ```
 # train
-nohup python train.py --project-path confgs/xxx.yml --batch-size 16 --backbone resnet101 --train-vision --plt-env mouse_detect --checkpoints checkpoints/ --epochs 100
+CUDA_VISIBLE_DEVICES=0 python train.py --project-path confgs/xxx.yml --batch-size 4 --backbone resnet101 --checkpoints checkpoints/ --epochs 100
 # predict
 python predict.py --input intput-images --output output-images --checkpoint checkpoints/xxx/retinanet_99.pth --project-file confgs/xxx.yml
 ```
