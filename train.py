@@ -20,6 +20,7 @@ from utils.vistool import VisTool
 assert torch.__version__.split('.')[0] == '1'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
 
+os.environ["LRU_CACHE_CAPACITY"] = "1"
 
 parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
 parser.add_argument('-p', '--project-path', default='./configs/mouse.yml', help='project file')
