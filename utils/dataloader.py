@@ -7,6 +7,7 @@ import random
 import csv
 import xml.etree.ElementTree as ET
 import cv2
+import traceback
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
@@ -53,18 +54,34 @@ class VocDataset(Dataset):
         """process single voc xml, get bbox,label and so on"""
         xml_anno = ET.parse(xml_path)
         anno = []
-        difficult = []
+        height = 0
+        width = 0
+        try:
+            obj = xml_anno.find('size')
+            width = float(obj.find('width').text)
+            height = float(obj.find('height').text)
+
+            arr = xml_path.split('/')
+            jpg_path = os.path.join('/'.join(arr[:-2]), 'JPEGImages', arr[-1][:-4]+'.jpg')
+      
+            if width < 10 or height < 10:
+                img = cv2.imread(jpg_path)
+                height, width, channel = img.shape
+        except:
+            img = cv2.imread(jpg_path)
+            height, width, channel = img.shape
 
         for obj in xml_anno.findall('object'):
-            if not use_difficult and int(obj.find('difficult').text) == 1:
-                continue
-
-            difficult.append(int(obj.find('difficult').text))
             bndbox_anno = obj.find('bndbox')
-            xmin = int(bndbox_anno.find('xmin').text)
-            ymin = int(bndbox_anno.find('ymin').text)
-            xmax = int(bndbox_anno.find('xmax').text)
-            ymax = int(bndbox_anno.find('ymax').text)
+            xmin = float(bndbox_anno.find('xmin').text)
+            ymin = float(bndbox_anno.find('ymin').text)
+            xmax = float(bndbox_anno.find('xmax').text)
+            ymax = float(bndbox_anno.find('ymax').text)
+            if xmin < 0: xmin = 0
+            if ymin < 0: ymin = 0
+            if xmax > width: xmax = int(width)
+            if ymax > height: ymax = int(height)
+
             class_name = obj.find('name').text.lower().strip()
             anno.append({'x1': xmin, 'x2': xmax, 'y1': ymin, 'y2': ymax, 'class': class_name})
         return anno
